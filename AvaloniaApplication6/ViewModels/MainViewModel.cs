@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using DynamicData;
 using ReactiveUI;
@@ -16,13 +17,14 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        var dep = new Dependency();
+        var dep = new Service();
         
         FeedCommand = ReactiveCommand.Create(() =>
         {
             subject.OnNext(Enumerable.Range(t, 10).Select(i => new Item(i, dep)));
             t += 10;
         });
+        
         subject
             .EditDiff(item => item.Key)
             .AsObservableCache()
@@ -40,21 +42,49 @@ public class MainViewModel : ViewModelBase
 
 public class Item : ReactiveObject
 {
-    private readonly Dependency dep;
+    private readonly Service svc;
+    private string projectedText;
     public int Key { get; }
 
-    public Item(int i, Dependency dep)
+    public Item(int i, Service svc)
     {
-        this.dep = dep;
+        this.svc = svc;
         Key = i;
-        this.WhenAnyValue(item => item.dep.Prop)
-            .BindTo(this, x => x.Prop);
+        this.WhenAnyValue(x => x.svc.Text)
+            .BindTo(this, x => x.ProjectedText);
     }
 
-    public string Prop { get; set; }
+    public string ProjectedText
+    {
+        get => projectedText;
+        set => this.RaiseAndSetIfChanged(ref projectedText, value);
+    }
 }
 
-public class Dependency : ReactiveObject
+public class Service : ReactiveObject
 {
-    public string Prop { get; set; } = "salute";
+    public Service()
+    {
+        var observable = Observable
+            .Timer(TimeSpan.FromSeconds(1), RxApp.MainThreadScheduler).Select(_ => GenerateRandomString(5))
+            .Repeat();
+        
+        observable
+            .BindTo(this, x => x.Text);
+    }
+    private static readonly Random random = new Random();
+    private string text;
+
+    public static string GenerateRandomString(int length)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+
+    public string Text
+    {
+        get => text;
+        set => this.RaiseAndSetIfChanged(ref text, value);
+    }
 }

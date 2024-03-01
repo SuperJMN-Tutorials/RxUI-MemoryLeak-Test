@@ -14,6 +14,15 @@
 
     <DockPanel>
         <Button Command="{Binding FeedCommand}" Content="Feed" DockPanel.Dock="Top" />
-        <ListBox ItemsSource="{Binding Collection}" DisplayMemberBinding="{Binding Key}" />
+        <ListBox ItemsSource="{Binding Collection}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{Binding Key}" />
+                        <TextBlock Text="{Binding ProjectedText}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </DockPanel>
 </UserControl>
