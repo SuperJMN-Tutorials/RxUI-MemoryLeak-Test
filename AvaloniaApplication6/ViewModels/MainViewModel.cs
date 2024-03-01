@@ -17,7 +17,7 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        // Each time we execute this command, we create a batch of Items that replace the previous batch.
+        // Each time we execute this command, we create a batch of Items that replaces the previous batch.
         CreateNewItems = ReactiveCommand.Create(() =>
         {
             itemListsObs.OnNext(Enumerable.Range(t, 10).Select(i => new Item(i, Singleton.Service)));
@@ -49,7 +49,7 @@ public class Item : ReactiveObject
         Key = i;
         Service = service;
         
-        // Here, we subscribe to a "foreign" object.
+        // Here, we subscribe to a "foreign" object whose lifetime isn't controlled by the Item.
         this.WhenAnyValue(x => x.Service.Text)
             .BindTo(this, x => x.ProjectedText);
     }
