@@ -12,49 +12,53 @@ namespace AvaloniaApplication6.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly Subject<IEnumerable<Item>> subject = new();
+    private readonly Subject<IEnumerable<Item>> itemListsObs = new();
     private int t;
 
     public MainViewModel()
     {
-        var dep = new Service();
-        
-        FeedCommand = ReactiveCommand.Create(() =>
+        // Each time we execute this command, we create a batch of Items that replace the previous batch.
+        CreateNewItems = ReactiveCommand.Create(() =>
         {
-            subject.OnNext(Enumerable.Range(t, 10).Select(i => new Item(i, dep)));
+            itemListsObs.OnNext(Enumerable.Range(t, 10).Select(i => new Item(i, Singleton.Service)));
             t += 10;
         });
         
-        subject
+        // itemListsObs is fed by the command
+        itemListsObs
             .EditDiff(item => item.Key)
             .AsObservableCache()
             .Connect()
             .Bind(out var collection)
             .Subscribe();
 
-        Collection = collection;
+        Items = collection;
     }
 
-    public ReadOnlyObservableCollection<Item> Collection { get; }
+    public ReadOnlyObservableCollection<Item> Items { get; }
 
-    public ReactiveCommand<Unit, Unit> FeedCommand { get; set; }
+    public ReactiveCommand<Unit, Unit> CreateNewItems { get; set; }
 }
 
 public class Item : ReactiveObject
 {
-    private readonly Service svc;
-    private string projectedText;
-    public int Key { get; }
+    private string? projectedText;
 
-    public Item(int i, Service svc)
+    public Item(int i, Service service)
     {
-        this.svc = svc;
         Key = i;
-        this.WhenAnyValue(x => x.svc.Text)
+        Service = service;
+        
+        // Here, we subscribe to a "foreign" object.
+        this.WhenAnyValue(x => x.Service.Text)
             .BindTo(this, x => x.ProjectedText);
     }
 
-    public string ProjectedText
+    public Service Service { get; }
+    
+    public int Key { get; }
+    
+    public string? ProjectedText
     {
         get => projectedText;
         set => this.RaiseAndSetIfChanged(ref projectedText, value);
@@ -72,19 +76,24 @@ public class Service : ReactiveObject
         observable
             .BindTo(this, x => x.Text);
     }
-    private static readonly Random random = new Random();
-    private string text;
+    
+    private string? text;
 
     public static string GenerateRandomString(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
+            .Select(s => s[Random.Shared.Next(s.Length)]).ToArray());
     }
 
-    public string Text
+    public string? Text
     {
         get => text;
         set => this.RaiseAndSetIfChanged(ref text, value);
     }
+}
+
+public static class Singleton
+{
+    public static readonly Service Service = new();
 }

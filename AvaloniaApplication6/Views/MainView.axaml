@@ -13,8 +13,8 @@
   </Design.DataContext>
 
     <DockPanel>
-        <Button Command="{Binding FeedCommand}" Content="Feed" DockPanel.Dock="Top" />
-        <ListBox ItemsSource="{Binding Collection}">
+        <Button Command="{Binding CreateNewItems}" Content="Feed" DockPanel.Dock="Top" />
+        <ListBox ItemsSource="{Binding Items}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal" Spacing="10">
